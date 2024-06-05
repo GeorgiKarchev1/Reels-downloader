@@ -37,10 +37,24 @@
   }
 }
 
+body {
+  background-color: #222;
+  color: #fff; /* За да направим текста четлив на тъмния фон */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif; /* Добавен шрифт за по-добър изглед */
+}
+
 .container {
   max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
+  text-align: center;
   padding: 2rem;
+  background-color: #333; /* Малко по-светъл фон за контейнера */
+  border-radius: 8px; /* Закръглени ъгли за по-добър изглед */
 }
 
 .mt-5 {
@@ -49,4 +63,30 @@
 
 .mt-3 {
   margin-top: 1rem;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  padding: 10px 20px; /* Увеличаване на вътрешните отстояния */
+  font-size: 1.1rem; /* Увеличаване на размера на шрифта */
+  font-weight: bold; /* Прави текста по-дебел */
+  border-width: 2px; /* Увеличаване на дебелината на границата */
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+}
+
+.form-control {
+  flex: 1;
+  margin-right: 0.5rem;
+  padding: 10px; /* Увеличаване на вътрешните отстояния на полето за въвеждане */
+  font-size: 1.1rem; /* Увеличаване на размера на шрифта на полето за въвеждане */
 }

@@ -15,20 +15,43 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-def initialize_driver(browser='chrome'):
-    if browser == 'chrome':
+def initialize_driver():
+    driver = None
+    try:
+        # Try to initialize Chrome
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-    elif browser == 'firefox':
-        options = webdriver.FirefoxOptions()
-        driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-    elif browser == 'edge':
-        options = webdriver.EdgeOptions()
-        driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
-    else:
-        raise ValueError(f"Browser {browser} is not supported")
+        print("Chrome driver initialized successfully.")
+    except Exception as e:
+        print(f"Chrome initialization failed: {e}")
+
+    if not driver:
+        try:
+            # Try to initialize Edge
+            options = webdriver.EdgeOptions()
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+            print("Edge driver initialized successfully.")
+        except Exception as e:
+            print(f"Edge initialization failed: {e}")
+
+    if not driver:
+        try:
+            # Try to initialize Firefox
+            options = webdriver.FirefoxOptions()
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+            print("Firefox driver initialized successfully.")
+        except Exception as e:
+            print(f"Firefox initialization failed: {e}")
+
+    if not driver:
+        raise RuntimeError("No supported browsers are available.")
+    
     return driver
 
 def download_video(video_url, download_path, video_name):
@@ -72,8 +95,8 @@ def scroll_until_no_new_elements(driver, previous_reels):
 
     return list(new_reels)
 
-def download_instagram_reels(page_url, download_path, browser='chrome'):
-    driver = initialize_driver(browser)
+def download_instagram_reels(page_url, download_path):
+    driver = initialize_driver()
     driver.get(page_url)
     time.sleep(5)  # Изчакай страницата да се зареди напълно
 
@@ -105,11 +128,10 @@ def download_instagram_reels(page_url, download_path, browser='chrome'):
 def download_reels():
     data = request.json
     instagram_page_url = data['instagram_page_url']
-    browser_choice = data['browser_choice']
     download_path = './downloads'
     if not os.path.exists(download_path):
         os.makedirs(download_path)
-    download_instagram_reels(instagram_page_url, download_path, browser_choice)
+    download_instagram_reels(instagram_page_url, download_path)
     return jsonify({"message": "All reels have been downloaded successfully."})
 
 if __name__ == "__main__":
