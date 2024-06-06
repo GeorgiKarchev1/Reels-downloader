@@ -40,6 +40,9 @@ function App() {
         </div>
       </form>
       {message && <p className="mt-3">{message}</p>}
+      <footer className="footer">
+        <h2>Made by Karchev</h2>
+      </footer>
     </div>
   );
 }

@@ -90,3 +90,30 @@ body {
   padding: 10px; /* Увеличаване на вътрешните отстояния на полето за въвеждане */
   font-size: 1.1rem; /* Увеличаване на размера на шрифта на полето за въвеждане */
 }
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+.footer {
+  text-align: center;
+  padding: 10px;
+}

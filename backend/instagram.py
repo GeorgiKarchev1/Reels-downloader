@@ -11,43 +11,47 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 import time
 import requests
 import os
+import logging
 
 app = Flask(__name__)
 CORS(app)
 
+# Настройка на логването
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def initialize_driver():
     driver = None
     try:
-        # Try to initialize Chrome
+        # Опит за инициализация на Chrome
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-        print("Chrome driver initialized successfully.")
+        logging.info("Chrome driver initialized successfully.")
     except Exception as e:
-        print(f"Chrome initialization failed: {e}")
+        logging.error(f"Chrome initialization failed: {e}")
 
     if not driver:
         try:
-            # Try to initialize Edge
+            # Опит за инициализация на Edge
             options = webdriver.EdgeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
-            print("Edge driver initialized successfully.")
+            logging.info("Edge driver initialized successfully.")
         except Exception as e:
-            print(f"Edge initialization failed: {e}")
+            logging.error(f"Edge initialization failed: {e}")
 
     if not driver:
         try:
-            # Try to initialize Firefox
+            # Опит за инициализация на Firefox
             options = webdriver.FirefoxOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-            print("Firefox driver initialized successfully.")
+            logging.info("Firefox driver initialized successfully.")
         except Exception as e:
-            print(f"Firefox initialization failed: {e}")
+            logging.error(f"Firefox initialization failed: {e}")
 
     if not driver:
         raise RuntimeError("No supported browsers are available.")
@@ -55,27 +59,32 @@ def initialize_driver():
     return driver
 
 def download_video(video_url, download_path, video_name):
-    video_content = requests.get(video_url).content
-    video_filename = os.path.join(download_path, video_name)
-    with open(video_filename, 'wb') as video_file:
-        video_file.write(video_content)
-    print(f"Video downloaded successfully and saved as {video_filename}")
+    try:
+        video_content = requests.get(video_url).content
+        video_filename = os.path.join(download_path, video_name)
+        with open(video_filename, 'wb') as video_file:
+            video_file.write(video_content)
+        logging.info(f"Video downloaded successfully and saved as {video_filename}")
+    except Exception as e:
+        logging.error(f"Error downloading video {video_name}: {e}")
 
 def accept_cookies(driver):
     try:
         accept_button = driver.find_element(By.XPATH, '//button[contains(text(), "Accept")]')
         accept_button.click()
         time.sleep(2)
+        logging.info("Cookies accepted successfully.")
     except Exception as e:
-        print(f"No cookies acceptance button found: {e}")
+        logging.warning(f"No cookies acceptance button found: {e}")
 
 def click_show_more_posts(driver):
     try:
         show_more_button = driver.find_element(By.XPATH, '//button[contains(text(), "Show more posts")]')
         show_more_button.click()
         time.sleep(2)
+        logging.info("Clicked 'Show more posts' button successfully.")
     except Exception as e:
-        print(f"No 'Show more posts' button found: {e}")
+        logging.warning(f"No 'Show more posts' button found: {e}")
 
 def scroll_until_no_new_elements(driver, previous_reels):
     scroll_pause_time = 3
@@ -93,12 +102,15 @@ def scroll_until_no_new_elements(driver, previous_reels):
             break
         last_height = new_height
 
+    logging.info("Scrolled until no new elements found.")
     return list(new_reels)
 
 def download_instagram_reels(page_url, download_path):
+    logging.info(f"Starting download process for page: {page_url}")
     driver = initialize_driver()
     driver.get(page_url)
     time.sleep(5)  # Изчакай страницата да се зареди напълно
+    logging.info("Page loaded successfully.")
 
     # Приемане на бисквитките
     accept_cookies(driver)
@@ -109,6 +121,7 @@ def download_instagram_reels(page_url, download_path):
     # Скролирай надолу докато не спре да намира нови елементи
     all_reels = []
     all_reels = scroll_until_no_new_elements(driver, all_reels)
+    logging.info(f"Found {len(all_reels)} reels.")
 
     for idx, reel_url in enumerate(all_reels):
         driver.get(reel_url)
@@ -119,10 +132,10 @@ def download_instagram_reels(page_url, download_path):
             video_name = f'reel_{idx + 1}.mp4'
             download_video(video_url, download_path, video_name)
         except Exception as e:
-            print(f"An error occurred for {reel_url}: {e}")
+            logging.error(f"An error occurred for {reel_url}: {e}")
     
     driver.quit()
-    print("All reels have been downloaded successfully.")
+    logging.info("All reels have been downloaded successfully.")
 
 @app.route('/download_reels', methods=['POST'])
 def download_reels():
