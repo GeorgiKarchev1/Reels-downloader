@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,6 +12,7 @@ import time
 import requests
 import os
 import logging
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -22,7 +23,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def initialize_driver():
     driver = None
     try:
-        # Опит за инициализация на Chrome
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
@@ -33,7 +33,6 @@ def initialize_driver():
 
     if not driver:
         try:
-            # Опит за инициализация на Edge
             options = webdriver.EdgeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -44,7 +43,6 @@ def initialize_driver():
 
     if not driver:
         try:
-            # Опит за инициализация на Firefox
             options = webdriver.FirefoxOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -58,15 +56,18 @@ def initialize_driver():
     
     return driver
 
-def download_video(video_url, download_path, video_name):
+def download_video(video_url, download_path):
     try:
         video_content = requests.get(video_url).content
+        video_name = f"{uuid.uuid4()}.mp4"
         video_filename = os.path.join(download_path, video_name)
         with open(video_filename, 'wb') as video_file:
             video_file.write(video_content)
         logging.info(f"Video downloaded successfully and saved as {video_filename}")
+        return video_name
     except Exception as e:
-        logging.error(f"Error downloading video {video_name}: {e}")
+        logging.error(f"Error downloading video: {e}")
+        return None
 
 def accept_cookies(driver):
     try:
@@ -112,30 +113,29 @@ def download_instagram_reels(page_url, download_path):
     time.sleep(5)  # Изчакай страницата да се зареди напълно
     logging.info("Page loaded successfully.")
 
-    # Приемане на бисквитките
     accept_cookies(driver)
-
-    # Кликване на бутона "Show more posts"
     click_show_more_posts(driver)
 
-    # Скролирай надолу докато не спре да намира нови елементи
     all_reels = []
     all_reels = scroll_until_no_new_elements(driver, all_reels)
     logging.info(f"Found {len(all_reels)} reels.")
 
-    for idx, reel_url in enumerate(all_reels):
+    video_links = []
+    for reel_url in all_reels:
         driver.get(reel_url)
         time.sleep(5)
         try:
             video_element = driver.find_element(By.TAG_NAME, 'video')
             video_url = video_element.get_attribute('src')
-            video_name = f'reel_{idx + 1}.mp4'
-            download_video(video_url, download_path, video_name)
+            video_name = download_video(video_url, download_path)
+            if video_name:
+                video_links.append(f"/download/{video_name}")
         except Exception as e:
             logging.error(f"An error occurred for {reel_url}: {e}")
     
     driver.quit()
     logging.info("All reels have been downloaded successfully.")
+    return video_links
 
 @app.route('/download_reels', methods=['POST'])
 def download_reels():
@@ -144,8 +144,12 @@ def download_reels():
     download_path = './downloads'
     if not os.path.exists(download_path):
         os.makedirs(download_path)
-    download_instagram_reels(instagram_page_url, download_path)
-    return jsonify({"message": "All reels have been downloaded successfully."})
+    video_links = download_instagram_reels(instagram_page_url, download_path)
+    return jsonify({"message": "All reels have been downloaded successfully.", "video_links": video_links})
+
+@app.route('/download/<filename>', methods=['GET'])
+def download(filename):
+    return send_from_directory('./downloads', filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

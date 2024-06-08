@@ -4,6 +4,7 @@ import './App.css';
 function App() {
   const [instagramPageUrl, setInstagramPageUrl] = useState('');
   const [message, setMessage] = useState('');
+  const [videoLinks, setVideoLinks] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,6 +19,7 @@ function App() {
     });
     const data = await response.json();
     setMessage(data.message);
+    setVideoLinks(data.video_links);
   };
 
   return (
@@ -40,6 +42,18 @@ function App() {
         </div>
       </form>
       {message && <p className="mt-3">{message}</p>}
+      {videoLinks.length > 0 && (
+        <div className="mt-3">
+          <h3>Download Links</h3>
+          <ul>
+            {videoLinks.map((link, index) => (
+              <li key={index}>
+                <a href={`http://127.0.0.1:5000${link}`} download>{`Download reel ${index + 1}`}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <footer className="footer">
         <h2>Made by Karchev</h2>
       </footer>
